@@ -153,6 +153,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.mariadb.jdbc</groupId>
+            <artifactId>mariadb-java-client</artifactId>
+            <version>1.4.5</version>
+        </dependency>
+
+        <dependency>
             <groupId>radeox</groupId>
             <artifactId>radeox</artifactId>
             <version>1.0-b2</version>

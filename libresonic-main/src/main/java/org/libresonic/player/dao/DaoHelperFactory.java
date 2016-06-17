@@ -26,6 +26,6 @@ package org.libresonic.player.dao;
 public class DaoHelperFactory {
 
     public static DaoHelper create() {
-        return new HsqlDaoHelper();
+        return new MysqlDaoHelper();
     }
 }
