@@ -36,8 +36,8 @@ import org.apache.commons.io.IOUtils;
  * Used for creating and evolving the database schema.
  * This class implementes the database schema for Libresonic version 6.1.
  *
- * @author Sindre Mehus
  * @author Bernardus Jansen
+ * Based on hsql schema's by Sindre Mehus
  */
 public class Schema61 extends Schema {
     private static final Logger LOG = Logger.getLogger(Schema61.class);
@@ -71,7 +71,7 @@ public class Schema61 extends Schema {
             LOG.info("Database table 'role' not found.  Creating it.");
             template.execute("CREATE TABLE role (" +
                              "id INT NOT NULL," +
-                             "name VARCHAR(191) NOT NULL," +
+                             "name VARCHAR(64) NOT NULL," +
                              "PRIMARY KEY (id))");
             template.execute("INSERT INTO role VALUES (1, 'admin')");
             template.execute("INSERT INTO role VALUES (2, 'download')");
@@ -87,6 +87,7 @@ public class Schema61 extends Schema {
                              "username VARCHAR(64) NOT NULL," +
                              "password VARCHAR(191) NOT NULL," +
                              "PRIMARY KEY (username))");
+            //create admin user
             template.execute("INSERT INTO user VALUES ('admin', 'admin')");
             LOG.info("Database table 'user' was created successfully.");
         }
@@ -111,10 +112,10 @@ public class Schema61 extends Schema {
             LOG.info("Database table 'music_folder' not found.  Creating it.");
             template.execute("CREATE TABLE music_folder (" +
                              "id INT NOT NULL AUTO_INCREMENT," +
-                             "path VARCHAR(191) NOT NULL," +
-                             "name VARCHAR(191) NOT NULL," +
+                             "path VARCHAR(500) NOT NULL," +
+                             "name VARCHAR(255) NOT NULL," +
                              "enabled BOOLEAN NOT NULL," +
-                             "PRIMARY KEY (id))");
+                             "PRIMARY KEY (id)) ROW_FORMAT = DYNAMIC");
             template.execute("INSERT INTO music_folder VALUES (null, '" + Util.getDefaultMusicFolder() + "', 'Music', 1)");
             LOG.info("Database table 'music_folder' was created successfully.");
         }
@@ -123,12 +124,12 @@ public class Schema61 extends Schema {
             LOG.info("Database table 'music_file_info' not found.  Creating it.");
             template.execute("CREATE TABLE music_file_info (" +
                              "id INT NOT NULL AUTO_INCREMENT," +
-                             "path VARCHAR(191) NOT NULL," +
+                             "path VARCHAR(500) NOT NULL," +
                              "rating int," +
-                             "comment VARCHAR(191)," +
+                             "comment VARCHAR(500)," +
                              "play_count int," +
                              "last_played datetime," +
-                             "PRIMARY KEY (id))");
+                             "PRIMARY KEY (id)) ROW_FORMAT = DYNAMIC");
             template.execute("create index idx_music_file_info_path on music_file_info(path)");
             LOG.info("Database table 'music_file_info' was created successfully.");
         }
@@ -138,10 +139,10 @@ public class Schema61 extends Schema {
             template.execute("CREATE TABLE internet_radio (" +
                              "id INT NOT NULL AUTO_INCREMENT," +
                              "name VARCHAR(191) NOT NULL," +
-                             "stream_url VARCHAR(191) NOT NULL," +
-                             "homepage_url VARCHAR(191)," +
+                             "stream_url VARCHAR(500) NOT NULL," +
+                             "homepage_url VARCHAR(500)," +
                              "enabled BOOLEAN NOT NULL," +
-                             "PRIMARY KEY (id))");
+                             "PRIMARY KEY (id)) ROW_FORMAT = DYNAMIC");
             LOG.info("Database table 'internet_radio' was created successfully.");
         }
 
@@ -149,10 +150,10 @@ public class Schema61 extends Schema {
             LOG.info("Database table 'player' not found.  Creating it.");
             template.execute("CREATE TABLE player (" +
                              "id INT NOT NULL," +
-                             "name VARCHAR(191)," +
+                             "name VARCHAR(64)," +
                              "type VARCHAR(191)," +
                              "username VARCHAR(64)," +
-                             "ip_address VARCHAR(191)," +
+                             "ip_address VARCHAR(15)," +
                              "auto_control_enabled BOOLEAN NOT NULL," +
                              "last_seen datetime," +
                              "cover_art_scheme VARCHAR(191) NOT NULL," +
@@ -187,8 +188,8 @@ public class Schema61 extends Schema {
             LOG.info("Database table 'user_settings' not found.  Creating it.");
             template.execute("CREATE TABLE user_settings (" +
                              "username VARCHAR(64) NOT NULL," +
-                             "locale VARCHAR(191)," +
-                             "theme_id VARCHAR(191)," +
+                             "locale VARCHAR(32)," +
+                             "theme_id VARCHAR(64)," +
                              "final_version_notification BOOLEAN DEFAULT 1 NOT NULL," +
                              "beta_version_notification BOOLEAN DEFAULT 0 NOT NULL," +
                              "main_caption_cutoff int default 35 NOT NULL," +
@@ -220,15 +221,15 @@ public class Schema61 extends Schema {
             LOG.info("Database table 'transcoding' not found.  Creating it.");
             template.execute("CREATE TABLE transcoding (" +
                              "id INT NOT NULL AUTO_INCREMENT," +
-                             "name VARCHAR(191) NOT NULL," +
-                             "source_format VARCHAR(191) NOT NULL," +
-                             "target_format VARCHAR(191) NOT NULL," +
-                             "step1 VARCHAR(191) NOT NULL," +
-                             "step2 VARCHAR(191)," +
-                             "step3 VARCHAR(191)," +
+                             "name VARCHAR(64) NOT NULL," +
+                             "source_format VARCHAR(16) NOT NULL," +
+                             "target_format VARCHAR(16) NOT NULL," +
+                             "step1 VARCHAR(500) NOT NULL," +
+                             "step2 VARCHAR(500)," +
+                             "step3 VARCHAR(500)," +
                              "enabled BOOLEAN NOT NULL," +
                              "default_active BOOLEAN DEFAULT 1 NOT NULL," +
-                             "PRIMARY KEY (id))");
+                             "PRIMARY KEY (id)) ROW_FORMAT = DYNAMIC");
 
             LOG.info("Database table 'transcoding' was created successfully.");
         }
@@ -248,10 +249,10 @@ public class Schema61 extends Schema {
             LOG.info("Database table 'user_rating' not found.  Creating it.");
             template.execute("CREATE TABLE user_rating (" +
                              "username VARCHAR(64) NOT NULL," +
-                             "path VARCHAR(191) NOT NULL," +
+                             "path VARCHAR(500) NOT NULL," +
                              "rating double NOT NULL," +
                              "PRIMARY KEY (username, path)," +
-                             "FOREIGN KEY (username) REFERENCES user(username) ON DELETE CASCADE)");
+                             "FOREIGN KEY (username) REFERENCES user(username) ON DELETE CASCADE) ROW_FORMAT = DYNAMIC");
             LOG.info("Database table 'user_rating' was created successfully.");
 
             template.execute("INSERT INTO user_rating SELECT 'admin', path, rating FROM music_file_info " +
@@ -296,12 +297,12 @@ public class Schema61 extends Schema {
             LOG.info("Database table 'podcast_channel' not found.  Creating it.");
             template.execute("CREATE TABLE podcast_channel (" +
                              "id INT NOT NULL AUTO_INCREMENT," +
-                             "url VARCHAR(191) NOT NULL," +
+                             "url VARCHAR(500) NOT NULL," +
                              "title VARCHAR(191)," +
-                             "description VARCHAR(191)," +
+                             "description VARCHAR(500)," +
                              "status VARCHAR(191) NOT NULL," +
-                             "error_message VARCHAR(191)," +
-                             "PRIMARY KEY (id))");
+                             "error_message VARCHAR(500)," +
+                             "PRIMARY KEY (id)) ROW_FORMAT = DYNAMIC");
             LOG.info("Database table 'podcast_channel' was created successfully.");
         }
 
@@ -310,18 +311,18 @@ public class Schema61 extends Schema {
             template.execute("CREATE TABLE podcast_episode (" +
                              "id INT NOT NULL AUTO_INCREMENT," +
                              "channel_id int NOT NULL," +
-                             "url VARCHAR(191) NOT NULL," +
-                             "path VARCHAR(191)," +
+                             "url VARCHAR(500) NOT NULL," +
+                             "path VARCHAR(500)," +
                              "title VARCHAR(191)," +
-                             "description VARCHAR(191)," +
+                             "description VARCHAR(500)," +
                              "publish_date datetime," +
                              "duration VARCHAR(191)," +
                              "bytes_total bigint," +
                              "bytes_downloaded bigint," +
                              "status VARCHAR(191) NOT NULL," +
-                             "error_message VARCHAR(191)," +
+                             "error_message VARCHAR(500)," +
                              "PRIMARY KEY (id)," +
-                             "FOREIGN KEY (channel_id) REFERENCES podcast_channel(id) ON DELETE CASCADE)");
+                             "FOREIGN KEY (channel_id) REFERENCES podcast_channel(id) ON DELETE CASCADE) ROW_FORMAT = DYNAMIC");
             LOG.info("Database table 'podcast_episode' was created successfully.");
         }
 
@@ -369,7 +370,7 @@ public class Schema61 extends Schema {
             LOG.info("Database table 'system_avatar' not found.  Creating it.");
             template.execute("CREATE TABLE system_avatar (" +
                              "id INT NOT NULL AUTO_INCREMENT," +
-                             "name VARCHAR(191)," +
+                             "name VARCHAR(64)," +
                              "created_date datetime NOT NULL," +
                              "mime_type VARCHAR(191) NOT NULL," +
                              "width int NOT NULL," +
@@ -387,7 +388,7 @@ public class Schema61 extends Schema {
             LOG.info("Database table 'custom_avatar' not found.  Creating it.");
             template.execute("CREATE TABLE custom_avatar (" +
                              "id INT NOT NULL AUTO_INCREMENT," +
-                             "name VARCHAR(191)," +
+                             "name VARCHAR(64)," +
                              "created_date datetime NOT NULL," +
                              "mime_type VARCHAR(191) NOT NULL," +
                              "width int NOT NULL," +
@@ -478,7 +479,7 @@ public class Schema61 extends Schema {
             LOG.info("Table 'share' not found in database. Creating it.");
             template.execute("CREATE TABLE share (" +
                     "id INT NOT NULL AUTO_INCREMENT," +
-                    "name VARCHAR(191) NOT NULL," +
+                    "name VARCHAR(64) NOT NULL," +
                     "description VARCHAR(191)," +
                     "username VARCHAR(64) NOT NULL," +
                     "created datetime NOT NULL," +
@@ -495,9 +496,9 @@ public class Schema61 extends Schema {
             template.execute("CREATE TABLE share_file (" +
                     "id INT NOT NULL AUTO_INCREMENT," +
                     "share_id int NOT NULL," +
-                    "path VARCHAR(191) NOT NULL," +
+                    "path VARCHAR(500) NOT NULL," +
                     "PRIMARY KEY (id)," +
-                    "FOREIGN KEY (share_id) REFERENCES share(id) ON DELETE CASCADE)");
+                    "FOREIGN KEY (share_id) REFERENCES share(id) ON DELETE CASCADE) ROW_FORMAT = DYNAMIC");
             LOG.info("Table 'share_file' was created successfully.");
         }
 
@@ -505,14 +506,14 @@ public class Schema61 extends Schema {
             LOG.info("Database table 'transcoding2' not found.  Creating it.");
             template.execute("CREATE TABLE transcoding2 (" +
                              "id INT NOT NULL AUTO_INCREMENT," +
-                             "name VARCHAR(191) NOT NULL," +
+                             "name VARCHAR(64) NOT NULL," +
                              "source_formats VARCHAR(191) NOT NULL," +
                              "target_format VARCHAR(191) NOT NULL," +
-                             "step1 VARCHAR(191) NOT NULL," +
-                             "step2 VARCHAR(191)," +
-                             "step3 VARCHAR(191)," +
+                             "step1 VARCHAR(500) NOT NULL," +
+                             "step2 VARCHAR(500)," +
+                             "step3 VARCHAR(500)," +
                              "default_active BOOLEAN DEFAULT 1 NOT NULL," +
-                             "PRIMARY KEY (id))");
+                             "PRIMARY KEY (id)) ROW_FORMAT = DYNAMIC");
 
             template.execute("INSERT INTO transcoding2(name, source_formats, target_format, step1) VALUES('mp3 audio'," +
                     "'ogg oga aac m4a flac wav wma aif aiff ape mpc shn', 'mp3', " +
@@ -554,7 +555,7 @@ public class Schema61 extends Schema {
             LOG.info("Database table 'media_file' not found.  Creating it.");
             template.execute("CREATE TABLE media_file (" +
                     "id INT NOT NULL AUTO_INCREMENT," +
-                    "path VARCHAR(191) NOT NULL," +
+                    "path VARCHAR(500) NOT NULL," +
                     "folder VARCHAR(191)," +
                     "type VARCHAR(191) NOT NULL," +
                     "format VARCHAR(191)," +
@@ -572,11 +573,11 @@ public class Schema61 extends Schema {
                     "file_size bigint," +
                     "width int," +
                     "height int," +
-                    "cover_art_path VARCHAR(191)," +
-                    "parent_path VARCHAR(191)," +
+                    "cover_art_path VARCHAR(500)," +
+                    "parent_path VARCHAR(500)," +
                     "play_count int NOT NULL," +
                     "last_played datetime," +
-                    "comment VARCHAR(191)," +
+                    "comment VARCHAR(500)," +
                     "created datetime NOT NULL," +
                     "changed datetime NOT NULL," +
                     "last_scanned datetime NOT NULL," +
@@ -584,7 +585,7 @@ public class Schema61 extends Schema {
                     "present BOOLEAN NOT NULL," +
                     "version int NOT NULL," +
                     "unique (path)," +
-                    "PRIMARY KEY (id))");
+                    "PRIMARY KEY (id)) ROW_FORMAT = DYNAMIC");
 
             template.execute("create index idx_media_file_path on media_file(path)");
             template.execute("create index idx_media_file_parent_path on media_file(parent_path)");
@@ -606,12 +607,12 @@ public class Schema61 extends Schema {
             template.execute("CREATE TABLE artist (" +
                     "id INT NOT NULL AUTO_INCREMENT," +
                     "name VARCHAR(191) NOT NULL," +
-                    "cover_art_path VARCHAR(191)," +
+                    "cover_art_path VARCHAR(500)," +
                     "album_count int default 0 NOT NULL," +
                     "last_scanned datetime NOT NULL," +
                     "present BOOLEAN NOT NULL," +
                     "unique (name)," +
-                    "PRIMARY KEY (id))");
+                    "PRIMARY KEY (id)) ROW_FORMAT = DYNAMIC");
 
             template.execute("create index idx_artist_name on artist(name)");
             template.execute("create index idx_artist_present on artist(present)");
@@ -623,20 +624,20 @@ public class Schema61 extends Schema {
             LOG.info("Database table 'album' not found.  Creating it.");
             template.execute("CREATE TABLE album (" +
                     "id INT NOT NULL AUTO_INCREMENT," +
-                    "path VARCHAR(191) NOT NULL," +
+                    "path VARCHAR(500) NOT NULL," +
                     "name VARCHAR(191) NOT NULL," +
                     "artist VARCHAR(191) NOT NULL," +
                     "song_count int default 0 NOT NULL," +
                     "duration_seconds int default 0 NOT NULL," +
-                    "cover_art_path VARCHAR(191)," +
+                    "cover_art_path VARCHAR(500)," +
                     "play_count int default 0 NOT NULL," +
                     "last_played datetime," +
-                    "comment VARCHAR(191)," +
+                    "comment VARCHAR(500)," +
                     "created datetime NOT NULL," +
                     "last_scanned datetime NOT NULL," +
                     "present BOOLEAN NOT NULL," +
                     "unique (artist, name)," +
-                    "PRIMARY KEY (id))");
+                    "PRIMARY KEY (id)) ROW_FORMAT = DYNAMIC");
 
             template.execute("create index idx_album_artist_name on album(artist, name)");
             template.execute("create index idx_album_play_count on album(play_count)");
@@ -713,13 +714,13 @@ public class Schema61 extends Schema {
                     "username VARCHAR(64) NOT NULL," +
                     "is_public BOOLEAN NOT NULL," +
                     "name VARCHAR(191) NOT NULL," +
-                    "comment VARCHAR(191)," +
+                    "comment VARCHAR(500)," +
                     "file_count int default 0 NOT NULL," +
                     "duration_seconds int default 0 NOT NULL," +
                     "created datetime NOT NULL," +
                     "changed datetime NOT NULL," +
                     "PRIMARY KEY (id)," +
-                    "FOREIGN KEY (username) REFERENCES user(username) ON DELETE CASCADE)");
+                    "FOREIGN KEY (username) REFERENCES user(username) ON DELETE CASCADE) ROW_FORMAT = DYNAMIC");
 
             LOG.info("Database table 'playlist' was created successfully.");
         }
@@ -764,13 +765,13 @@ public class Schema61 extends Schema {
                     "media_file_id int NOT NULL," +
                     "position_millis bigint NOT NULL," +
                     "username VARCHAR(64) NOT NULL," +
-                    "comment VARCHAR(191)," +
+                    "comment VARCHAR(500)," +
                     "created datetime NOT NULL," +
                     "changed datetime NOT NULL," +
                     "PRIMARY KEY (id)," +
                     "FOREIGN KEY (media_file_id) REFERENCES media_file(id) ON DELETE CASCADE,"+
                     "FOREIGN KEY (username) REFERENCES user(username) ON DELETE CASCADE," +
-                    "unique (media_file_id, username))");
+                    "unique (media_file_id, username)) ROW_FORMAT = DYNAMIC");
 
             template.execute("create index idx_bookmark_media_file_id on bookmark(media_file_id)");
             template.execute("create index idx_bookmark_username on bookmark(username)");
