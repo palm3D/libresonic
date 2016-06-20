@@ -37,7 +37,7 @@ import org.apache.commons.io.IOUtils;
  * This class implementes the database schema for Libresonic version 6.1.
  *
  * @author Bernardus Jansen
- * Based on hsql schema's by Sindre Mehus
+ * Based on hsql schemas by Sindre Mehus
  */
 public class Schema61 extends Schema {
     private static final Logger LOG = Logger.getLogger(Schema61.class);
@@ -171,16 +171,16 @@ public class Schema61 extends Schema {
             LOG.info("Role 'comment' not found in database. Creating it.");
             template.execute("INSERT INTO role VALUES (6, 'comment')");
             template.execute("INSERT INTO user_role " +
-                             "SELECT distinct u.username, 6 FROM user u, user_role ur " +
+                             "SELECT DISTINCT u.username, 6 FROM user u, user_role ur " +
                              "WHERE u.username = ur.username AND ur.role_id IN (1, 5)");
             LOG.info("Role 'comment' was created successfully.");
         }
 
         if (!columnExists(template, "bytes_streamed", "user")) {
             LOG.info("Database columns 'user.bytes_streamed/downloaded/uploaded' not found.  Creating them.");
-            template.execute("ALTER TABLE user add bytes_streamed bigint default 0 NOT NULL");
-            template.execute("ALTER TABLE user add bytes_downloaded bigint default 0 NOT NULL");
-            template.execute("ALTER TABLE user add bytes_uploaded bigint default 0 NOT NULL");
+            template.execute("ALTER TABLE user ADD bytes_streamed BIGINT DEFAULT 0 NOT NULL");
+            template.execute("ALTER TABLE user ADD bytes_downloaded BIGINT DEFAULT 0 NOT NULL");
+            template.execute("ALTER TABLE user ADD bytes_uploaded BIGINT DEFAULT 0 NOT NULL");
             LOG.info("Database columns 'user.bytes_streamed/downloaded/uploaded' were added successfully.");
         }
 
@@ -192,7 +192,7 @@ public class Schema61 extends Schema {
                              "theme_id VARCHAR(64)," +
                              "final_version_notification BOOLEAN DEFAULT 1 NOT NULL," +
                              "beta_version_notification BOOLEAN DEFAULT 0 NOT NULL," +
-                             "main_caption_cutoff int default 35 NOT NULL," +
+                             "main_caption_cutoff INT DEFAULT 35 NOT NULL," +
                              "main_track_number BOOLEAN DEFAULT 1 NOT NULL," +
                              "main_artist BOOLEAN DEFAULT 1 NOT NULL," +
                              "main_album BOOLEAN DEFAULT 0 NOT NULL," +
@@ -202,7 +202,7 @@ public class Schema61 extends Schema {
                              "main_duration BOOLEAN DEFAULT 1 NOT NULL," +
                              "main_format BOOLEAN DEFAULT 0 NOT NULL," +
                              "main_file_size BOOLEAN DEFAULT 0 NOT NULL," +
-                             "playlist_caption_cutoff int default 35 NOT NULL," +
+                             "playlist_caption_cutoff INT DEFAULT 35 NOT NULL," +
                              "playlist_track_number BOOLEAN DEFAULT 0 NOT NULL," +
                              "playlist_artist BOOLEAN DEFAULT 1 NOT NULL," +
                              "playlist_album BOOLEAN DEFAULT 1 NOT NULL," +
@@ -242,6 +242,12 @@ public class Schema61 extends Schema {
                              "PRIMARY KEY (player_id, transcoding_id)," +
                              "FOREIGN KEY (player_id) REFERENCES player(id) ON DELETE CASCADE," +
                              "FOREIGN KEY (transcoding_id) REFERENCES transcoding(id) ON DELETE CASCADE)");
+
+            for (String format : Arrays.asList("avi", "mpg", "mpeg", "mp4", "m4v", "mkv", "mov", "wmv", "ogv")) {
+                  template.update("delete FROM transcoding WHERE source_format=? and target_format=?", new Object[] {format, "flv"});
+                  template.execute("INSERT INTO transcoding VALUES(null,'" + format + " > flv' ,'" + format + "' ,'flv','ffmpeg -ss %o -i %s -async 1 -b %bk -s %wx%h -ar 44100 -ac 2 -v 0 -f flv -',null,null,1,1)");
+                  template.execute("INSERT INTO player_transcoding SELECT p.id as player_id, t.id as transaction_id FROM player p, transcoding t WHERE t.name = '" + format + " > flv'");
+            }
             LOG.info("Database table 'player_transcoding' was created successfully.");
         }
 
@@ -289,7 +295,7 @@ public class Schema61 extends Schema {
 
         if (!columnExists(template, "selected_music_folder_id", "user_settings")) {
             LOG.info("Database column 'user_settings.selected_music_folder_id' not found.  Creating it.");
-            template.execute("ALTER TABLE user_settings add selected_music_folder_id int default -1 NOT NULL");
+            template.execute("ALTER TABLE user_settings add selected_music_folder_id INT DEFAULT -1 NOT NULL");
             LOG.info("Database column 'user_settings.selected_music_folder_id' was added successfully.");
         }
 
@@ -324,45 +330,51 @@ public class Schema61 extends Schema {
                              "PRIMARY KEY (id)," +
                              "FOREIGN KEY (channel_id) REFERENCES podcast_channel(id) ON DELETE CASCADE) ROW_FORMAT = DYNAMIC");
             LOG.info("Database table 'podcast_episode' was created successfully.");
+
+            if (!rowExists(template, "table_name='PODCAST_EPISODE' and column_name='URL' and ordinal_position=1",
+                           "information_schema.system_indexinfo")) {
+                template.execute("create index idx_podcast_episode_url on podcast_episode(url)");
+                LOG.info("Created index for podcast_episode.url");
+            }
         }
 
         if (template.queryForInt("SELECT count(*) FROM role WHERE id = 7") == 0) {
             LOG.info("Role 'podcast' not found in database. Creating it.");
             template.execute("INSERT INTO role VALUES (7, 'podcast')");
             template.execute("INSERT INTO user_role " +
-                             "SELECT distinct u.username, 7 FROM user u, user_role ur " +
-                             "WHERE u.username = ur.username and ur.role_id = 1");
+                             "SELECT DISTINCT u.username, 7 FROM user u, user_role ur " +
+                             "WHERE u.username = ur.username AND ur.role_id = 1");
             LOG.info("Role 'podcast' was created successfully.");
         }
 
         if (!columnExists(template, "ldap_authenticated", "user")) {
             LOG.info("Database column 'user.ldap_authenticated' not found.  Creating it.");
-            template.execute("ALTER TABLE user add ldap_authenticated BOOLEAN DEFAULT 0 NOT NULL");
+            template.execute("ALTER TABLE user ADD ldap_authenticated BOOLEAN DEFAULT 0 NOT NULL");
             LOG.info("Database column 'user.ldap_authenticated' was added successfully.");
         }
 
         if (!columnExists(template, "party_mode_enabled", "user_settings")) {
             LOG.info("Database column 'user_settings.party_mode_enabled' not found.  Creating it.");
-            template.execute("ALTER TABLE user_settings add party_mode_enabled BOOLEAN DEFAULT 0 NOT NULL");
+            template.execute("ALTER TABLE user_settings ADD party_mode_enabled BOOLEAN DEFAULT 0 NOT NULL");
             LOG.info("Database column 'user_settings.party_mode_enabled' was added successfully.");
         }
 
         if (!columnExists(template, "now_playing_allowed", "user_settings")) {
             LOG.info("Database column 'user_settings.now_playing_allowed' not found.  Creating it.");
-            template.execute("ALTER TABLE user_settings add now_playing_allowed BOOLEAN DEFAULT 1 NOT NULL");
+            template.execute("ALTER TABLE user_settings ADD now_playing_allowed BOOLEAN DEFAULT 1 NOT NULL");
             LOG.info("Database column 'user_settings.now_playing_allowed' was added successfully.");
         }
 
         if (!columnExists(template, "web_player_default", "user_settings")) {
             LOG.info("Database column 'user_settings.web_player_default' not found.  Creating it.");
-            template.execute("ALTER TABLE user_settings add web_player_default BOOLEAN DEFAULT 0 NOT NULL");
+            template.execute("ALTER TABLE user_settings ADD web_player_default BOOLEAN DEFAULT 0 NOT NULL");
             LOG.info("Database column 'user_settings.web_player_default' was added successfully.");
         }
 
         if (template.queryForInt("SELECT count(*) FROM role WHERE id = 8") == 0) {
             LOG.info("Role 'stream' not found in database. Creating it.");
             template.execute("INSERT INTO role VALUES (8, 'stream')");
-            template.execute("INSERT INTO user_role SELECT distinct u.username, 8 FROM user u");
+            template.execute("INSERT INTO user_role SELECT DISTINCT u.username, 8 FROM user u");
             LOG.info("Role 'stream' was created successfully.");
         }
 
@@ -416,7 +428,7 @@ public class Schema61 extends Schema {
         if (template.queryForInt("SELECT count(*) FROM role WHERE id = 9") == 0) {
             LOG.info("Role 'settings' not found in database. Creating it.");
             template.execute("INSERT INTO role VALUES (9, 'settings')");
-            template.execute("INSERT INTO user_role SELECT distinct u.username, 9 FROM user u");
+            template.execute("INSERT INTO user_role SELECT DISTINCT u.username, 9 FROM user u");
             LOG.info("Role 'settings' was created successfully.");
         }
 
@@ -424,7 +436,7 @@ public class Schema61 extends Schema {
             LOG.info("Role 'jukebox' not found in database. Creating it.");
             template.execute("INSERT INTO role VALUES (10, 'jukebox')");
             template.execute("INSERT INTO user_role " +
-                             "SELECT distinct u.username, 10 FROM user u, user_role ur " +
+                             "SELECT DISTINCT u.username, 10 FROM user u, user_role ur " +
                              "WHERE u.username = ur.username and ur.role_id = 1");
             LOG.info("Role 'jukebox' was created successfully.");
         }
@@ -453,13 +465,6 @@ public class Schema61 extends Schema {
             LOG.info("Database column 'user_settings.show_chat' was added successfully.");
         }
 
-        for (String format : Arrays.asList("avi", "mpg", "mpeg", "mp4", "m4v", "mkv", "mov", "wmv", "ogv")) {
-            template.update("delete FROM transcoding WHERE source_format=? and target_format=?", new Object[] {format, "flv"});
-            template.execute("INSERT INTO transcoding VALUES(null,'" + format + " > flv' ,'" + format + "' ,'flv','ffmpeg -ss %o -i %s -async 1 -b %bk -s %wx%h -ar 44100 -ac 2 -v 0 -f flv -',null,null,1,1)");
-            template.execute("INSERT INTO player_transcoding SELECT p.id as player_id, t.id as transaction_id FROM player p, transcoding t WHERE t.name = '" + format + " > flv'");
-        }
-        LOG.info("Created video transcoding configuration.");
-
         if (!columnExists(template, "email", "user")) {
             LOG.info("Database column 'user.email' not found.  Creating it.");
             template.execute("ALTER TABLE user add email VARCHAR(191)");
@@ -470,7 +475,7 @@ public class Schema61 extends Schema {
             LOG.info("Role 'share' not found in database. Creating it.");
             template.execute("INSERT INTO role VALUES (11, 'share')");
             template.execute("INSERT INTO user_role " +
-                             "SELECT distinct u.username, 11 FROM user u, user_role ur " +
+                             "SELECT DISTINCT u.username, 11 FROM user u, user_role ur " +
                              "WHERE u.username = ur.username and ur.role_id = 1");
             LOG.info("Role 'share' was created successfully.");
         }
@@ -485,7 +490,7 @@ public class Schema61 extends Schema {
                     "created datetime NOT NULL," +
                     "expires datetime," +
                     "last_visited datetime," +
-                    "visit_count int default 0 NOT NULL," +
+                    "visit_count INT DEFAULT 0 NOT NULL," +
                     "unique (name)," +
                     "PRIMARY KEY (id)," +
                     "FOREIGN KEY (username) REFERENCES user(username) ON DELETE CASCADE)");
@@ -543,10 +548,10 @@ public class Schema61 extends Schema {
                              "FOREIGN KEY (transcoding_id) REFERENCES transcoding2(id) ON DELETE CASCADE)");
 
             template.execute("INSERT INTO player_transcoding2(player_id, transcoding_id) " +
-                    "SELECT distinct p.id, t.id FROM player p, transcoding2 t");
+                    "SELECT DISTINCT p.id, t.id FROM player p, transcoding2 t");
 
             template.execute("INSERT INTO player_transcoding2(player_id, transcoding_id) " +
-                    "SELECT distinct p.id, t.id FROM player p, transcoding2 t WHERE t.name='mkv video'");
+                    "SELECT DISTINCT p.id, t.id FROM player p, transcoding2 t WHERE t.name='mkv video'");
 
             LOG.info("Database table 'player_transcoding2' was created successfully.");
         }
@@ -559,7 +564,7 @@ public class Schema61 extends Schema {
                     "folder VARCHAR(191)," +
                     "type VARCHAR(191) NOT NULL," +
                     "format VARCHAR(191)," +
-                    "title VARCHAR(191)," +
+                    "title VARCHAR(500)," +
                     "album VARCHAR(191)," +
                     "artist VARCHAR(191)," +
                     "album_artist VARCHAR(191)," +
@@ -608,7 +613,7 @@ public class Schema61 extends Schema {
                     "id INT NOT NULL AUTO_INCREMENT," +
                     "name VARCHAR(191) NOT NULL," +
                     "cover_art_path VARCHAR(500)," +
-                    "album_count int default 0 NOT NULL," +
+                    "album_count INT DEFAULT 0 NOT NULL," +
                     "last_scanned datetime NOT NULL," +
                     "present BOOLEAN NOT NULL," +
                     "unique (name)," +
@@ -627,10 +632,10 @@ public class Schema61 extends Schema {
                     "path VARCHAR(500) NOT NULL," +
                     "name VARCHAR(191) NOT NULL," +
                     "artist VARCHAR(191) NOT NULL," +
-                    "song_count int default 0 NOT NULL," +
-                    "duration_seconds int default 0 NOT NULL," +
+                    "song_count INT DEFAULT 0 NOT NULL," +
+                    "duration_seconds INT DEFAULT 0 NOT NULL," +
                     "cover_art_path VARCHAR(500)," +
-                    "play_count int default 0 NOT NULL," +
+                    "play_count INT DEFAULT 0 NOT NULL," +
                     "last_played datetime," +
                     "comment VARCHAR(500)," +
                     "created datetime NOT NULL," +
@@ -643,14 +648,9 @@ public class Schema61 extends Schema {
             template.execute("create index idx_album_play_count on album(play_count)");
             template.execute("create index idx_album_last_played on album(last_played)");
             template.execute("create index idx_album_present on album(present)");
+            template.execute("create index idx_album_name on album(name)");
 
             LOG.info("Database table 'album' was created successfully.");
-        }
-
-        // Added in 4.7.beta3
-        if (!rowExists(template, "table_name='ALBUM' and column_name='NAME' and ordinal_position=1",
-                "information_schema.system_indexinfo")) {
-            template.execute("create index idx_album_name on album(name)");
         }
 
         if (!tableExists(template, "starred_media_file")) {
@@ -715,8 +715,8 @@ public class Schema61 extends Schema {
                     "is_public BOOLEAN NOT NULL," +
                     "name VARCHAR(191) NOT NULL," +
                     "comment VARCHAR(500)," +
-                    "file_count int default 0 NOT NULL," +
-                    "duration_seconds int default 0 NOT NULL," +
+                    "file_count INT DEFAULT 0 NOT NULL," +
+                    "duration_seconds INT DEFAULT 0 NOT NULL," +
                     "created datetime NOT NULL," +
                     "changed datetime NOT NULL," +
                     "PRIMARY KEY (id)," +
@@ -802,19 +802,15 @@ public class Schema61 extends Schema {
 
         if (!columnExists(template, "album_count", "genre")) {
             LOG.info("Database column 'genre.album_count' not found.  Creating it.");
-            template.execute("ALTER TABLE genre add album_count int default 0 NOT NULL");
+            template.execute("ALTER TABLE genre add album_count INT DEFAULT 0 NOT NULL");
             LOG.info("Database column 'genre.album_count' was added successfully.");
         }
-
-
 
         if (!columnExists(template, "song_notification", "user_settings")) {
             LOG.info("Database column 'user_settings.song_notification' not found.  Creating it.");
             template.execute("ALTER TABLE user_settings add song_notification BOOLEAN default 1 NOT NULL");
             LOG.info("Database column 'user_settings.song_notification' was added successfully.");
         }
-
-
 
         if (!columnExists(template, "show_artist_info", "user_settings")) {
             LOG.info("Database column 'user_settings.show_artist_info' not found.  Creating it.");
@@ -877,12 +873,6 @@ public class Schema61 extends Schema {
                              "FOREIGN KEY (media_file_id) REFERENCES media_file(id) ON DELETE CASCADE)");
 
             LOG.info("Database table 'play_queue_file' was created successfully.");
-        }
-
-        if (!rowExists(template, "table_name='PODCAST_EPISODE' and column_name='URL' and ordinal_position=1",
-                       "information_schema.system_indexinfo")) {
-            template.execute("create index idx_podcast_episode_url on podcast_episode(url)");
-            LOG.info("Created index for podcast_episode.url");
         }
 
         if (!columnExists(template, "default_album_list", "user_settings")) {

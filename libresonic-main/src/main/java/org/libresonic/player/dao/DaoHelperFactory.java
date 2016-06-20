@@ -26,6 +26,9 @@ package org.libresonic.player.dao;
 public class DaoHelperFactory {
 
     public static DaoHelper create() {
+        //Uncomment HsqlDaoHelper for database configured in HsqlDaoHelper.java
+        //Uncomment MysqlDaoHelper for database configured in MysqlDaoHelper.java
+        //return new HsqlDaoHelper();
         return new MysqlDaoHelper();
     }
 }

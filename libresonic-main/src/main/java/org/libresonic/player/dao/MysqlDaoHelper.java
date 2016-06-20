@@ -34,7 +34,8 @@ import org.libresonic.player.service.SettingsService;
 /**
  * DAO helper class which creates the data source, and updates the database schema.
  *
- * @author Sindre Mehus
+ * @author Bernardus Jansen
+ * Based on HsqlDaoHelper by Sindre Mehus
  */
 public class MysqlDaoHelper implements DaoHelper {
 
