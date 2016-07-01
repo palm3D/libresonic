@@ -146,21 +146,6 @@ public class Schema61 extends Schema {
             LOG.info("Database table 'music_folder' was created successfully.");
         }
 
-        if (!tableExists(template, "music_file_info")) {
-            LOG.info("Database table 'music_file_info' not found.  Creating it.");
-            template.execute("CREATE TABLE music_file_info (" +
-                             "id INT NOT NULL AUTO_INCREMENT," +
-                             "path VARCHAR(500) NOT NULL," +
-                             "rating INT," +
-                             "comment VARCHAR(500)," +
-                             "play_count INT," +
-                             "last_played DATETIME," +
-                             "enabled BOOLEAN DEFAULT 1 NOT NULL," +
-                             "PRIMARY KEY (id)) ROW_FORMAT = DYNAMIC");
-            template.execute("CREATE INDEX idx_music_file_info_path on music_file_info(path)");
-            LOG.info("Database table 'music_file_info' was created successfully.");
-        }
-
         if (!tableExists(template, "internet_radio")) {
             LOG.info("Database table 'internet_radio' not found.  Creating it.");
             template.execute("CREATE TABLE internet_radio (" +
