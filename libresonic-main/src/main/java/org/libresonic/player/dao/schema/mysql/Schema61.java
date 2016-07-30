@@ -59,6 +59,9 @@ public class Schema61 extends Schema {
     };
 
     public void execute(JdbcTemplate template) {
+        template.execute("SET GLOBAL innodb_file_format = BARRACUDA");
+        template.execute("SET GLOBAL innodb_large_prefix = ON");
+        
         if (!tableExists(template, "version")) {
 
             LOG.info("Database table 'version' not found.  Creating it.");
